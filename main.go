@@ -77,6 +77,20 @@ func main() {
 		logger.AppendRequestID(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, response.NewBase(c, 0, "pong"))
 		})
+	authorized.POST("/upload", logger.AppendRequestID(), func(c *gin.Context) {
+		file, _ := c.FormFile("file")
+		log.Println(file.Filename)
+
+		dst := "./" + file.Filename
+		// 上传文件至指定的完整文件路径
+		err := c.SaveUploadedFile(file, dst)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.NewBase(c, 1, err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, response.NewBase(c, 0, fmt.Sprintf("'%s' with %d bytes uploaded!", file.Filename, file.Size)))
+	})
 
 	// Parse Static files
 	router.StaticFile("/", "./public/index.html")
