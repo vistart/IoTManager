@@ -12,7 +12,7 @@ import (
 	"github.com/rhosocial/go-rush-common/component/response"
 )
 
-// It keeps a list of clients those are currently attached
+// Event keeps a list of clients those are currently attached
 // and broadcasting events to those clients.
 type Event struct {
 	// Events are pushed to this channel by the main events-gathering routine
@@ -28,7 +28,7 @@ type Event struct {
 	TotalClients map[chan string]bool
 }
 
-// New event messages are broadcast to all registered client connection channels
+// ClientChan New event messages are broadcast to all registered client connection channels
 type ClientChan chan string
 
 func main() {
@@ -75,11 +75,13 @@ func main() {
 
 	authorized.GET("/ping",
 		logger.AppendRequestID(), func(c *gin.Context) {
+			stream.Message <- c.ClientIP() + ": ping"
 			c.JSON(http.StatusOK, response.NewBase(c, 0, "pong"))
 		})
 	authorized.POST("/upload", logger.AppendRequestID(), func(c *gin.Context) {
 		file, err := c.FormFile("file.amr")
 		if err != nil {
+			stream.Message <- c.ClientIP() + ": uploaded, but failed, " + err.Error()
 			c.AbortWithStatusJSON(http.StatusBadRequest, response.NewBase(c, 1, err.Error()))
 			return
 		}
@@ -89,10 +91,12 @@ func main() {
 		// 上传文件至指定的完整文件路径
 		err = c.SaveUploadedFile(file, dst)
 		if err != nil {
+			stream.Message <- c.ClientIP() + ": uploaded, but failed, " + err.Error()
 			c.AbortWithStatusJSON(http.StatusBadRequest, response.NewBase(c, 1, err.Error()))
 			return
 		}
 
+		stream.Message <- c.ClientIP() + fmt.Sprintf("'%s' with %d bytes uploaded!", time.Now().Format("2006-01-02-15-04-05_")+file.Filename, file.Size)
 		c.JSON(http.StatusOK, response.NewBase(c, 0, fmt.Sprintf("'%s' with %d bytes uploaded!", time.Now().Format("2006-01-02-15-04-05_")+file.Filename, file.Size)))
 	})
 
@@ -102,7 +106,7 @@ func main() {
 	router.Run(":8085")
 }
 
-// Initialize event and Start procnteessing requests
+// NewServer Initialize event and Start procnteessing requests
 func NewServer() (event *Event) {
 	event = &Event{
 		Message:       make(chan string),
