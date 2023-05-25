@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -87,7 +89,8 @@ func main() {
 		}
 		log.Println(file.Filename)
 
-		dst := "./" + time.Now().Format("2006-01-02-15-04-05_") + file.Filename
+		savedFilename := time.Now().Format("2006-01-02-15-04-05_") + file.Filename
+		dst := "./" + savedFilename
 		// 上传文件至指定的完整文件路径
 		err = c.SaveUploadedFile(file, dst)
 		if err != nil {
@@ -96,8 +99,26 @@ func main() {
 			return
 		}
 
-		stream.Message <- c.ClientIP() + fmt.Sprintf("'%s' with %d bytes uploaded!", time.Now().Format("2006-01-02-15-04-05_")+file.Filename, file.Size)
+		stream.Message <- c.ClientIP() + fmt.Sprintf("'<a href=\"/download?file=%s\" download=\"%s\">%s</a>' with %d bytes uploaded!", savedFilename, savedFilename, savedFilename, file.Size)
 		c.JSON(http.StatusOK, response.NewBase(c, 0, fmt.Sprintf("'%s' with %d bytes uploaded!", time.Now().Format("2006-01-02-15-04-05_")+file.Filename, file.Size)))
+	})
+	authorized.GET("/download", logger.AppendRequestID(), func(c *gin.Context) {
+		filename := c.Query("file")
+		if len(filename) == 0 {
+			c.AbortWithStatusJSON(http.StatusNotFound, response.NewBase(c, 1, "file not found"))
+			return
+		}
+		matched, err := regexp.MatchString("^20[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}_file.amr", filename)
+		if err != nil || !matched {
+			c.AbortWithStatusJSON(http.StatusNotFound, response.NewBase(c, 1, "file not found"))
+			return
+		}
+		if _, err := os.Stat(filename); err == nil {
+			c.File(filename)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusNotFound, response.NewBase(c, 1, "file not found"))
+		return
 	})
 
 	// Parse Static files
