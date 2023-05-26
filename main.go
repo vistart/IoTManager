@@ -127,7 +127,7 @@ func main() {
 	router.Run(":8085")
 }
 
-// NewServer Initialize event and Start procnteessing requests
+// NewServer Initialize event and Start preprocessing requests
 func NewServer() (event *Event) {
 	event = &Event{
 		Message:       make(chan string),
