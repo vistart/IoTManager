@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Server Sent Event</title>
+    <title>IoTManager</title>
 </head>
 
 <body>
@@ -13,7 +13,7 @@
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
     // EventSource object of javascript listens the streaming events from our go server and prints the message.
-    var stream = new EventSource("http://localhost:8085/stream");
+    var stream = new EventSource("/stream");
     stream.addEventListener("message", function(e){
         $('.event-data').append(e.data + "</br>")
     });
