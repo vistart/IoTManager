@@ -21,6 +21,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
         name: Build and push
         id: build_and_push_go120
         uses: docker/build-push-action@v2
